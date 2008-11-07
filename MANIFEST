@@ -1,0 +1,25 @@
+Changes
+lib/Log/Dump.pm
+Makefile.PL
+MANIFEST			This list of files
+README
+t/00_load.t
+t/10_basic.t
+t/20_capture.t
+t/30_child.t
+t/99_pod.t
+t/99_podcoverage.t
+t/lib/Log/Dump/Test/Basic/Has.pm
+t/lib/Log/Dump/Test/Capture/Basic.pm
+t/lib/Log/Dump/Test/Capture/Disable.pm
+t/lib/Log/Dump/Test/Capture/File.pm
+t/lib/Log/Dump/Test/Capture/Filter.pm
+t/lib/Log/Dump/Test/Capture/Wrapped.pm
+t/lib/Log/Dump/Test/Child.pm
+t/lib/Log/Dump/Test/Child/Basic.pm
+t/lib/Log/Dump/Test/Child/Disable.pm
+t/lib/Log/Dump/Test/Child/File.pm
+t/lib/Log/Dump/Test/Child/Filter.pm
+t/lib/Log/Dump/Test/Child/Wrapped.pm
+t/lib/Log/Dump/Test/Class.pm
+META.yml                                 Module meta-data (added by MakeMaker)
