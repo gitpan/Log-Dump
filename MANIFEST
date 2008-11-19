@@ -11,12 +11,14 @@ t/99_pod.t
 t/99_podcoverage.t
 t/lib/Log/Dump/Test/Basic/Has.pm
 t/lib/Log/Dump/Test/Capture/Basic.pm
+t/lib/Log/Dump/Test/Capture/Colored.pm
 t/lib/Log/Dump/Test/Capture/Disable.pm
 t/lib/Log/Dump/Test/Capture/File.pm
 t/lib/Log/Dump/Test/Capture/Filter.pm
 t/lib/Log/Dump/Test/Capture/Wrapped.pm
 t/lib/Log/Dump/Test/Child.pm
 t/lib/Log/Dump/Test/Child/Basic.pm
+t/lib/Log/Dump/Test/Child/Colored.pm
 t/lib/Log/Dump/Test/Child/Disable.pm
 t/lib/Log/Dump/Test/Child/File.pm
 t/lib/Log/Dump/Test/Child/Filter.pm

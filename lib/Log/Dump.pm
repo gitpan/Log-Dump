@@ -5,7 +5,7 @@ use warnings;
 use Sub::Install qw( install_sub );
 use Scalar::Util qw( blessed );
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 my $caller = caller;
 
@@ -51,37 +51,60 @@ install_sub({
   code => sub {
     my $self = shift;
 
+    my $logfile_ref;
+    if ( blessed $self ) {
+      $logfile_ref = \($self->{_logfile});
+      }
+    else {
+      no strict 'refs';
+      $logfile_ref = \(${"$self\::_logfile"});
+    }
+
     if ( @_ && $_[0] ) {
       push @_, 'w' if @_ == 1;
       require IO::File;
       my $fh = IO::File->new(@_) or $self->log( fatal => $! );
-      if ( blessed $self ) {
-        $self->{_logfile} = $fh;
-      }
-      else {
-        no strict 'refs';
-        ${"$self\::_logfile"} = $fh;
-      }
+      $$logfile_ref = $fh;
     }
     elsif ( @_ && !$_[0] ) {
-      if ( blessed $self ) {
-        $self->{_logfile}->close if $self->{_logfile};
-        $self->{_logfile} = undef;
-      }
-      else {
-        no strict 'refs';
-        ${"$self\::_logfile"}->close if ${"$self\::_logfile"};
-        ${"$self\::_logfile"} = undef;
-      }
+      $$logfile_ref->close if $$logfile_ref;
+      $$logfile_ref = undef;
     }
     else {
-      if ( blessed $self ) {
-        $self->{_logfile};
+      $$logfile_ref;
+    }
+  },
+});
+
+install_sub({
+  as   => 'logcolor',
+  into => $caller,
+  code => sub {
+    my $self = shift;
+
+    my $logcolor_ref;
+    if ( blessed $self ) {
+      $logcolor_ref = \($self->{_logcolor});
       }
-      else {
-        no strict 'refs';
-        ${"$self\::_logfile"};
-      }
+    else {
+      no strict 'refs';
+      $logcolor_ref = \(${"$self\::_logcolor"});
+    }
+
+    unless ( defined $$logcolor_ref ) {
+      eval { require Term::ANSIColor };
+      $$logcolor_ref = $@ ? 0 : {};
+    }
+    return unless $$logcolor_ref;
+
+    if ( @_ == 1 && $_[0] ) {
+      $$logcolor_ref->{$_[0]};
+    }
+    elsif ( @_ && !$_[0] ) {
+      $$logcolor_ref = {};
+    }
+    elsif ( @_ % 2 == 0 ) {
+      $$logcolor_ref = { %{ $$logcolor_ref }, @_ };
     }
   },
 });
@@ -107,18 +130,23 @@ install_sub({
 
       require Data::Dump;
       my $msg = join '', map { ref $_ ? Data::Dump::dump($_) : $_ } @_;
+      my $colored_msg = $msg;
+      if ( my $color = $self->logcolor($label) ) {
+        eval { $colored_msg = Term::ANSIColor::colored($msg, $color) };
+        $colored_msg = $msg if $@;
+      }
 
       if ( $label eq 'fatal' ) {
         require Carp;
-        Carp::croak "[$label] $msg";
+        Carp::croak "[$label] $colored_msg";
       }
       elsif ( $label eq 'error' or $label eq 'warn' ) {
         require Carp;
-        Carp::carp "[$label] $msg";
+        Carp::carp "[$label] $colored_msg";
         $self->logfile->print(Carp::shortmess("[$label] $msg"), "\n") if $self->logfile;
       }
       else {
-        print STDERR "[$label] $msg\n";
+        print STDERR "[$label] $colored_msg\n";
         $self->logfile->print("[$label] $msg\n") if $self->logfile;
       }
     }
@@ -163,6 +191,14 @@ Log::Dump - simple logger mainly for debugging
     __PACKAGE__->log( file => 'will be saved' );
     __PACKAGE__->logfile('');  # to close
 
+    # you can color logs to stderr
+    sub important_method {
+      my $self = shift;
+      $self->logcolor( important => 'bold red on_white' );
+      $self->log( important => 'bold red message' );
+      $self->logcolor(0);  # no color
+    }
+
     # you can turn off the logging; set to true to turn on.
     __PACKAGE__->logger(0);
 
@@ -171,7 +207,7 @@ Log::Dump - simple logger mainly for debugging
 
 =head1 DESCRIPTION
 
-L<Log::Dump> is a simple logger mix-in mainly for debugging. This installs four methods into a caller (the class that C<use>d L<Log::Dump>) via L<Sub::Install>. The point is you don't need to load extra dumper modules or you don't need to concatenate messages. Just log things and they will be dumped (and concatenated if necessary) to stderr, and to a file if you prefer. Also, you can use these logging methods as class methods or object methods (though usually you don't want to mix them, especially when you're doing something special).
+L<Log::Dump> is a simple logger mix-in mainly for debugging. This installs five methods into a caller (the class that C<use>d L<Log::Dump>) via L<Sub::Install>. The point is you don't need to load extra dumper modules or you don't need to concatenate messages. Just log things and they will be dumped (and concatenated if necessary) to stderr, and to a file if you prefer. Also, you can use these logging methods as class methods or object methods (though usually you don't want to mix them, especially when you're doing something special).
 
 =head1 METHODS
 
@@ -198,6 +234,10 @@ If you specify some labels through this, only logs with those labels will be sho
 =head2 logfile
 
 If you want to log to a file, set a file name, and an optional open mode for L<IO::File> (C<w> for write by default). When you set a false value, the opened file will be closed. Note that this doesn't disable logging to stderr. Logs will be dumped both to stderr and to a file while the file is open.
+
+=head2 logcolor
+
+If you want to color logs to stderr, provide a label and its color specification (actually a hash of them) to C<logcolor>. Then, log will be colored (if L<Term::ANSIColor> is installed and your terminal supports the specification). If you set a false scalar, coloring will be disabled. See L<Term::ANSIColor> for color specifications.
 
 =head1 AUTHOR
 
