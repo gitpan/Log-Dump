@@ -1,6 +1,6 @@
 Changes
 lib/Log/Dump.pm
-lib/Log/Dump/Singleton.pm
+lib/Log/Dump/Class.pm
 Makefile.PL
 MANIFEST			This list of files
 README
@@ -9,7 +9,7 @@ t/10_basic.t
 t/20_capture.t
 t/30_child.t
 t/40_loaded.t
-t/50_singleton.t
+t/50_class.t
 t/99_pod.t
 t/99_podcoverage.t
 t/lib/Log/Dump/Test/Basic/Has.pm
@@ -27,10 +27,10 @@ t/lib/Log/Dump/Test/Child/File.pm
 t/lib/Log/Dump/Test/Child/Filter.pm
 t/lib/Log/Dump/Test/Child/Wrapped.pm
 t/lib/Log/Dump/Test/Class.pm
+t/lib/Log/Dump/Test/Class/Basic.pm
+t/lib/Log/Dump/Test/ClassLog.pm
+t/lib/Log/Dump/Test/ClassUserA.pm
+t/lib/Log/Dump/Test/ClassUserB.pm
 t/lib/Log/Dump/Test/Loaded.pm
 t/lib/Log/Dump/Test/Loaded/Basic.pm
-t/lib/Log/Dump/Test/Singleton/Basic.pm
-t/lib/Log/Dump/Test/SingletonLog.pm
-t/lib/Log/Dump/Test/SingletonUserA.pm
-t/lib/Log/Dump/Test/SingletonUserB.pm
 META.yml                                 Module meta-data (added by MakeMaker)

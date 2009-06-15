@@ -1,5 +1,8 @@
 Revision history for Log-Dump
 
+0.05 2009/06/16
+  - renamed misleading ::Singleton to ::Class
+
 0.04 2009/06/16
   - now logcolor actually colors logs even under MSWin32
     (thanks to Win32::Console::ANSI)

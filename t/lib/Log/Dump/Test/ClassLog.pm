@@ -1,8 +1,8 @@
-package Log::Dump::Test::SingletonLog;
+package Log::Dump::Test::ClassLog;
 
 use strict;
 use warnings;
-use Log::Dump::Singleton;
+use Log::Dump::Class;
 
 sub new { bless {}, shift }
 

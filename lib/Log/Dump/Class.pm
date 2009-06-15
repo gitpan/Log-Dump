@@ -1,4 +1,4 @@
-package Log::Dump::Singleton;
+package Log::Dump::Class;
 
 use strict;
 use warnings;
@@ -46,14 +46,14 @@ __END__
 
 =head1 NAME
 
-Log::Dump::Singleton
+Log::Dump::Class
 
 =head1 SYNOPSIS
 
-prepare your singleton logger:
+prepare your logger class:
 
   package YourApp::Log;
-  use Log::Dump::Singleton;
+  use Log::Dump::Class;
 
 and use it in your application classes:
 
@@ -71,9 +71,9 @@ all the classes will be affected by that change.
 
 =head1 DESCRIPTION
 
-You usually want to use this for a larger application, as this allows you to enable/disable a logger application-wide (not per a class). See SYNOPSIS for usage, and L<Log::Dump> for available methods.
+You usually want to use this for a larger application, as this allows you to enable/disable a logger application-wide easily (not per a class). See SYNOPSIS for usage, and L<Log::Dump> for available methods.
 
-Note that L<Log::Dump::Singleton>-based class stores its status in the class, not in an object that actually uses it (even if you call its methods from the object).
+Note that L<Log::Dump::Class>-based class stores its status in the class, not in an object that actually uses it (even if you call its methods from the object).
 
 =head1 AUTHOR
 
