@@ -5,11 +5,13 @@ use warnings;
 use Sub::Install qw( install_sub );
 use Scalar::Util qw( blessed );
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 sub import {
   my $class = shift;
   my $caller = caller;
+
+  return if $caller eq 'main';
 
   install_sub({
     as   => 'logger',
@@ -96,6 +98,8 @@ sub import {
       unless ( defined $$logcolor_ref ) {
         eval { require Term::ANSIColor };
         $$logcolor_ref = $@ ? 0 : {};
+
+        eval { require Win32::Console::ANSI } if $^O eq 'MSWin32';
       }
       return unless $$logcolor_ref;
 

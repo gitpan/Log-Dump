@@ -34,6 +34,9 @@ sub color : Tests(6) {
     $target->log( color => 'message' );
     $capture->stop;
 
+    # Let's see a colored message to see if it actually works
+    $target->log( color => 'message' );
+
     my $colored = $capture->read;
     like $colored => qr/\[color\] .+message.+/,
          $class->message('captured');
