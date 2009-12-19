@@ -5,7 +5,7 @@ use warnings;
 use Sub::Install qw( install_sub );
 use Scalar::Util qw( blessed );
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 sub import {
   my $class = shift;

@@ -1,5 +1,8 @@
 Revision history for Log-Dump
 
+0.06 2009/12/19
+  - added ::Functions
+
 0.05 2009/06/16
   - renamed misleading ::Singleton to ::Class
 
