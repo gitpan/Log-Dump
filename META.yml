@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Log-Dump
-version:            0.07
+version:            0.08
 abstract:           simple logger mainly for debugging
 author:
     - Kenichi Ishigaki <ishigaki@cpan.org>
