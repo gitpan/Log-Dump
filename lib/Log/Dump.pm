@@ -5,7 +5,7 @@ use warnings;
 use Sub::Install qw( install_sub );
 use Scalar::Util qw( blessed );
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 our @CARP_NOT = qw/Log::Dump Log::Dump::Class Log::Dump::Functions/;
 
 sub import {
@@ -14,151 +14,158 @@ sub import {
 
   return if $caller eq 'main';
 
-  install_sub({
-    as   => 'logger',
-    into => $caller,
-    code => sub {
-      my $self = shift;
+  my @methods = qw/logger logfilter logfile logcolor log/;
+  for my $method (@methods) {
+    install_sub({
+      as   => $method,
+      into => $caller,
+      code => \&{$method},
+    });
+  }
+}
 
-      my $logger = $_[0];
-         $logger = undef if $logger and $logger !~ /^[A-Z]/;
-      if ( blessed $self ) {
-        @_ ? $self->{_logger} = $logger : $self->{_logger};
+sub logger {
+  my $self = shift;
+
+  my $logger = $_[0];
+    $logger = undef if $logger and $logger !~ /^[A-Z]/;
+  if ( blessed $self ) {
+    @_ ? $self->{_logger} = $logger : $self->{_logger};
+  }
+  else {
+    no strict 'refs';
+    @_ ? ${"$self\::_logger"} = $logger : ${"$self\::_logger"};
+  }
+}
+
+sub logfilter {
+  my $self = shift;
+
+  my $filter = undef;
+  if (@_ && $_[0]) {
+    $filter = {pos => [], neg => []};
+    for (@_) {
+      if (substr($_, 0, 1) eq '!') {
+        push @{$filter->{neg}}, substr($_, 1);
       }
       else {
-        no strict 'refs';
-        @_ ? ${"$self\::_logger"} = $logger : ${"$self\::_logger"};
+        push @{$filter->{pos}}, $_;
       }
-    },
-  });
+    }
+  }
 
-  install_sub({
-    as   => 'logfilter',
-    into => $caller,
-    code => sub {
-      my $self = shift;
+  if ( blessed $self ) {
+    @_ ? $self->{_logfilter} = $filter : $self->{_logfilter};
+  }
+  else {
+    no strict 'refs';
+    @_ ? ${"$self\::_logfilter"} = $filter : ${"$self\::_logfilter"};
+  }
+}
 
-      my $filter = @_ && $_[0] ? [@_] : undef;
+sub logfile {
+  my $self = shift;
 
-      if ( blessed $self ) {
-        @_ ? $self->{_logfilter} = $filter : $self->{_logfilter};
+  my $logfile_ref;
+  if ( blessed $self ) {
+    $logfile_ref = \($self->{_logfile});
+    }
+  else {
+    no strict 'refs';
+    $logfile_ref = \(${"$self\::_logfile"});
+  }
+
+  if ( @_ && $_[0] ) {
+    push @_, 'w' if @_ == 1;
+    require IO::File;
+    my $fh = IO::File->new(@_) or $self->log( fatal => $! );
+    $$logfile_ref = $fh;
+  }
+  elsif ( @_ && !$_[0] ) {
+    $$logfile_ref->close if $$logfile_ref;
+    $$logfile_ref = undef;
+  }
+  else {
+    $$logfile_ref;
+  }
+}
+
+sub logcolor {
+  my $self = shift;
+
+  my $logcolor_ref;
+  if ( blessed $self ) {
+    $logcolor_ref = \($self->{_logcolor});
+    }
+  else {
+    no strict 'refs';
+    $logcolor_ref = \(${"$self\::_logcolor"});
+  }
+
+  unless ( defined $$logcolor_ref ) {
+    eval { require Term::ANSIColor };
+    $$logcolor_ref = $@ ? 0 : {};
+
+    eval { require Win32::Console::ANSI } if $^O eq 'MSWin32';
+  }
+  return unless $$logcolor_ref;
+
+  if ( @_ == 1 && $_[0] ) {
+    $$logcolor_ref->{$_[0]};
+  }
+  elsif ( @_ && !$_[0] ) {
+    $$logcolor_ref = {};
+  }
+  elsif ( @_ % 2 == 0 ) {
+    $$logcolor_ref = { %{ $$logcolor_ref }, @_ };
+  }
+}
+
+sub log {
+  my $self = shift;
+
+  my $logger = $self->logger;
+
+  if ( defined $logger and !$logger ) {
+    return;
+  }
+  elsif ( $logger and $logger->can('log') ) {
+    $logger->log(@_);
+  }
+  else {
+    my $label = shift;
+
+    if ($self->logfilter) {
+      if (my @neg = @{ $self->logfilter->{neg} }) {
+        return if grep { $label eq $_ } @neg;
       }
-      else {
-        no strict 'refs';
-        @_ ? ${"$self\::_logfilter"} = $filter : ${"$self\::_logfilter"};
+      if (my @pos = @{ $self->logfilter->{pos} }) {
+        return if !grep { $label eq $_ } @pos;
       }
-    },
-  });
+    }
 
-  install_sub({
-    as   => 'logfile',
-    into => $caller,
-    code => sub {
-      my $self = shift;
+    require Data::Dump;
+    my $msg = join '', map { ref $_ ? Data::Dump::dump($_) : $_ } @_;
+    my $colored_msg = $msg;
+    if ( my $color = $self->logcolor($label) ) {
+      eval { $colored_msg = Term::ANSIColor::colored($msg, $color) };
+      $colored_msg = $msg if $@;
+    }
 
-      my $logfile_ref;
-      if ( blessed $self ) {
-        $logfile_ref = \($self->{_logfile});
-        }
-      else {
-        no strict 'refs';
-        $logfile_ref = \(${"$self\::_logfile"});
-      }
-
-      if ( @_ && $_[0] ) {
-        push @_, 'w' if @_ == 1;
-        require IO::File;
-        my $fh = IO::File->new(@_) or $self->log( fatal => $! );
-        $$logfile_ref = $fh;
-      }
-      elsif ( @_ && !$_[0] ) {
-        $$logfile_ref->close if $$logfile_ref;
-        $$logfile_ref = undef;
-      }
-      else {
-        $$logfile_ref;
-      }
-    },
-  });
-
-  install_sub({
-    as   => 'logcolor',
-    into => $caller,
-    code => sub {
-      my $self = shift;
-
-      my $logcolor_ref;
-      if ( blessed $self ) {
-        $logcolor_ref = \($self->{_logcolor});
-        }
-      else {
-        no strict 'refs';
-        $logcolor_ref = \(${"$self\::_logcolor"});
-      }
-
-      unless ( defined $$logcolor_ref ) {
-        eval { require Term::ANSIColor };
-        $$logcolor_ref = $@ ? 0 : {};
-
-        eval { require Win32::Console::ANSI } if $^O eq 'MSWin32';
-      }
-      return unless $$logcolor_ref;
-
-      if ( @_ == 1 && $_[0] ) {
-        $$logcolor_ref->{$_[0]};
-      }
-      elsif ( @_ && !$_[0] ) {
-        $$logcolor_ref = {};
-      }
-      elsif ( @_ % 2 == 0 ) {
-        $$logcolor_ref = { %{ $$logcolor_ref }, @_ };
-      }
-    },
-  });
-
-  install_sub({
-    as   => 'log',
-    into => $caller,
-    code => sub {
-      my $self = shift;
-
-      my $logger = $self->logger;
-
-      if ( defined $logger and !$logger ) {
-        return;
-      }
-      elsif ( $logger and $logger->can('log') ) {
-        $logger->log(@_);
-      }
-      else {
-        my $label = shift;
-
-        return if $self->logfilter and !grep { $label eq $_ } @{ $self->logfilter };
-
-        require Data::Dump;
-        my $msg = join '', map { ref $_ ? Data::Dump::dump($_) : $_ } @_;
-        my $colored_msg = $msg;
-        if ( my $color = $self->logcolor($label) ) {
-          eval { $colored_msg = Term::ANSIColor::colored($msg, $color) };
-          $colored_msg = $msg if $@;
-        }
-
-        if ( $label eq 'fatal' ) {
-          require Carp;
-          Carp::croak "[$label] $colored_msg";
-        }
-        elsif ( $label eq 'error' or $label eq 'warn' ) {
-          require Carp;
-          Carp::carp "[$label] $colored_msg";
-          $self->logfile->print(Carp::shortmess("[$label] $msg"), "\n") if $self->logfile;
-        }
-        else {
-          print STDERR "[$label] $colored_msg\n";
-          $self->logfile->print("[$label] $msg\n") if $self->logfile;
-        }
-      }
-    },
-  });
+    if ( $label eq 'fatal' ) {
+      require Carp;
+      Carp::croak "[$label] $colored_msg";
+    }
+    elsif ( $label eq 'error' or $label eq 'warn' ) {
+      require Carp;
+      Carp::carp "[$label] $colored_msg";
+      $self->logfile->print(Carp::shortmess("[$label] $msg"), "\n") if $self->logfile;
+    }
+    else {
+      print STDERR "[$label] $colored_msg\n";
+      $self->logfile->print("[$label] $msg\n") if $self->logfile;
+    }
+  }
 }
 
 1;
